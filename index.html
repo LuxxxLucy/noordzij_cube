@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Noordzij Cube: A Three-Dimensional Typography Space</title>
+    <link rel="stylesheet" href="https://edwardtufte.github.io/tufte-css/tufte.css"/>
+    <style>
+        :root {
+            --bg-color: #fffff8;
+            --text-color: #111111;
+            --border-color: #ddd;
+            --button-bg: #333;
+            --button-hover: #000;
+        }
+        
+        [data-theme="dark"] {
+            --bg-color: #111111;
+            --text-color: #fffff8;
+            --border-color: #444;
+            --button-bg: #ddd;
+            --button-hover: #fff;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .iframe-wrapper {
+            position: relative;
+            width: 50%;
+            padding-bottom: 50%;
+            height: 0;
+            overflow: hidden;
+            margin: 2rem 0;
+        }
+        
+        .iframe-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 1px solid var(--border-color);
+        }
+        
+        /* Ensure the embedded visualization has good spacing */
+        figure.fullwidth {
+            margin: 2rem 0;
+        }
+        
+        /* Dark mode toggle button */
+        #theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--button-bg);
+            color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+            z-index: 1000;
+        }
+        
+        #theme-toggle:hover {
+            background: var(--button-hover);
+        }
+        
+        /* Dark mode adjustments for Tufte CSS elements */
+        [data-theme="dark"] a:link,
+        [data-theme="dark"] a:visited {
+            color: var(--text-color);
+        }
+        
+        [data-theme="dark"] blockquote {
+            border-left-color: var(--border-color);
+        }
+        
+        [data-theme="dark"] code {
+            background-color: #222;
+        }
+    </style>
+</head>
+<body>
+    <button id="theme-toggle">🌙 Dark Mode</button>
+    
+    <article>
+        <h1>Noordzij's Cube</h1>
+        <!-- <p class="subtitle">Jialin Lu</p> -->
+            <p class="sans">Jialin Lu <a href="https://luxxxlucy.github.io">luxxxlucy.github.io</a> November 14 2025</p>
+        
+        <section>
+            <p>
+                <span class="newthought">Visualizing</span> Gerrit Noordzij's Cube,
+                which is perhaps the world's first designspace and root of the construction of parametric design and variable font.
+                It introduces the three fundamental characteristics of letterforms, in the cultural sense that the aesthetic of the letterform is determined by the writing tool of pen.
+                
+                <br>
+                This is now rather boring, in the next step I will try to recreate this with a learning model. Too many works has been done on AI/ML for typography, but I guess in order for it to be truly recognized, we need to be back to classics and be all on focusing on the nuances.
+                <label for="sn-book" class="margin-toggle sidenote-number"></label>
+                <input type="checkbox" id="sn-book" class="margin-toggle"/>
+                <span class="sidenote">
+                    Seminal work <em>The Stroke: Theory of Writing</em>.
+                    <br>
+                    <br>
+                    <img src="asset/The Stroke - Theory Of Writing.jpg" alt="The Stroke: Theory of Writing by Gerrit Noordzij" style="width:50%;"/>
+                </span>
+                
+                The cube maps weight, contrast, and stroke transition as continuous axes—drag to rotate, scroll to zoom.
+            </p>
+            <div class="iframe-wrapper section">
+                <iframe src="cube.html" frameborder="0" allowfullscreen></iframe>
+            </div>
+        </section>
+        
+        <section>
+            <h2>Reference </h2>
+            
+            <p>
+                <a href="https://www.typeroom.eu/in-memoriam-gerrit-noordzij-1931-2022">In Memoriam Gerrit Noordzij 1931-2022</a>
+            </p>
+            <p>
+                <a href="https://www.axis-praxis.org/playground/noordzij-cube/">Axis Praxis: Noordzij Cube</a>
+            </p>
+            <p>
+                <a href="https://fvar.unsoundscapes.com">Multidimensional
+                    Axis Visualizer</a>
+            </p>
+        </section>
+    </article>
+    
+    <script>
+        // Dark mode toggle functionality
+        const themeToggle = document.getElementById('theme-toggle');
+        const iframe = document.querySelector('iframe');
+        
+        // Check for saved theme preference or default to light mode
+        const currentTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', currentTheme);
+        updateToggleButton(currentTheme);
+        
+        // Wait for iframe to load, then send initial theme
+        iframe.addEventListener('load', () => {
+            iframe.contentWindow.postMessage({ type: 'theme', theme: currentTheme }, '*');
+        });
+        
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateToggleButton(newTheme);
+            
+            // Send theme to iframe
+            iframe.contentWindow.postMessage({ type: 'theme', theme: newTheme }, '*');
+        });
+        
+        function updateToggleButton(theme) {
+            themeToggle.textContent = theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+        }
+    </script>
+</body>
+</html>
