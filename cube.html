@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noordzij Cube - Interactive 3D Visualization</title>
+    <style>
+        @font-face {
+            font-family: NoordzijCube;
+            src: url(./NoordzijCubeGX.woff2);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+            background: #ffffff;
+            transition: background-color 0.3s;
+        }
+        
+        body.dark-mode {
+            background: #000000;
+        }
+        
+        #container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 25px;
+            border-radius: 4px;
+            color: #333;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+        
+        button {
+            background: #333;
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            margin: 0 5px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #000;
+        }
+        
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #333;
+            font-size: 18px;
+            text-align: center;
+            z-index: 200;
+        }
+        
+        .spinner {
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-top: 3px solid #333;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+    
+    <div id="loading">
+        <div class="spinner"></div>
+        <p>Generating Noordzij Cube...</p>
+    </div>
+    
+    <div id="controls">
+        <button id="resetBtn">Reset View</button>
+        <button id="autoRotateBtn">Stop Rotation</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS3DRenderer.js"></script>
+    <script>
+        // Scene setup
+        const scene = new THREE.Scene();
+        
+        const camera = new THREE.PerspectiveCamera(
+            60,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            2000
+        );
+        camera.position.set(800, 800, 1200);
+        camera.lookAt(0, 0, 0);
+        
+        // Use CSS3DRenderer for rendering HTML elements
+        const renderer = new THREE.CSS3DRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.domElement.style.position = 'absolute';
+        renderer.domElement.style.top = '0';
+        document.getElementById('container').appendChild(renderer.domElement);
+        
+        // Create a CSS3D letter element
+        function createLetterElement(weight, contrast, strokeTransition) {
+            const element = document.createElement('div');
+            element.style.width = '150px';
+            element.style.height = '150px';
+            element.style.display = 'flex';
+            element.style.alignItems = 'center';
+            element.style.justifyContent = 'center';
+            element.style.fontFamily = 'NoordzijCube';
+            element.style.fontSize = '180px';
+            element.style.fontVariationSettings = `'wght' ${weight}, 'cont' ${contrast}, 'strk' ${strokeTransition}`;
+            element.style.color = document.body.classList.contains('dark-mode') ? '#ffffff' : '#000000';
+            element.style.lineHeight = '1';
+            element.style.transform = 'translateY(-5px)'; // Small offset to center better
+            element.style.pointerEvents = 'none'; // Make non-selectable
+            element.style.userSelect = 'none'; // Prevent text selection
+            element.textContent = 'e';
+            
+            const object = new THREE.CSS3DObject(element);
+            return object;
+        }
+        
+        // Generate all 125 letter variations
+        const letterGroup = new THREE.Group();
+        const letterObjects = []; // Store all letter objects for billboard effect
+        const steps = 5;
+        
+        function generateCube() {
+            for (let x = 0; x < steps; x++) {
+                for (let y = 0; y < steps; y++) {
+                    for (let z = 0; z < steps; z++) {
+                        // Map cube position to spatial coordinates: 0,1,2,3,4 -> -2.5,-1.25,0,1.25,2.5
+                        const cubeX = (x - 2) * 1.25;
+                        const cubeY = (y - 2) * 1.25;
+                        const cubeZ = (z - 2) * 1.25;
+                        
+                        // Map spatial coordinates [-2.5, 2.5] to Noordzij parameters [0, 1000]
+                        // -2.5 -> 0, -1.25 -> 250, 0 -> 500, 1.25 -> 750, 2.5 -> 1000
+                        const weight = (cubeX + 2.5) * 200; // Linear mapping: [-2.5,2.5] -> [0,1000]
+                        const contrast = (cubeY + 2.5) * 200;
+                        const strokeTransition = (cubeZ + 2.5) * 200;
+                        
+                        // Create CSS3D object with the letter
+                        const letterObject = createLetterElement(weight, contrast, strokeTransition);
+                        letterObject.position.set(cubeX * 100, cubeY * 100, cubeZ * 100);
+                        
+                        letterGroup.add(letterObject);
+                        letterObjects.push(letterObject); // Store for billboard effect
+                    }
+                }
+            }
+            
+            scene.add(letterGroup);
+            
+            // Hide loading screen
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        // Wait for font to load, then generate the cube
+        document.fonts.ready.then(() => {
+            setTimeout(generateCube, 100);
+        });
+        
+        // Mouse controls
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let autoRotate = true; // Auto-rotate enabled by default
+        
+        renderer.domElement.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+        });
+        
+        renderer.domElement.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const deltaX = e.clientX - previousMousePosition.x;
+                const deltaY = e.clientY - previousMousePosition.y;
+                
+                letterGroup.rotation.y += deltaX * 0.01;
+                letterGroup.rotation.x += deltaY * 0.01;
+                
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            }
+        });
+        
+        renderer.domElement.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+        
+        renderer.domElement.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            camera.position.multiplyScalar(1 + e.deltaY * 0.001);
+        });
+        
+        // Button controls
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            camera.position.set(800, 800, 1200);
+            camera.lookAt(0, 0, 0);
+            letterGroup.rotation.set(0, 0, 0);
+            autoRotate = false;
+        });
+        
+        document.getElementById('autoRotateBtn').addEventListener('click', () => {
+            autoRotate = !autoRotate;
+            document.getElementById('autoRotateBtn').textContent = 
+                autoRotate ? 'Stop Rotation' : 'Auto Rotate';
+        });
+        
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (autoRotate) {
+                letterGroup.rotation.y += 0.005;
+            }
+            
+            // Make all letters face the camera (billboard effect) and apply depth-based effects
+            // First pass: find closest and farthest distances from camera
+            let minCameraDistance = Infinity;
+            let maxCameraDistance = -Infinity;
+            const letterData = [];
+            
+            letterObjects.forEach(letterObject => {
+                const worldPos = new THREE.Vector3();
+                letterObject.getWorldPosition(worldPos);
+                const cameraDistance = camera.position.distanceTo(worldPos);
+                
+                letterData.push({ letterObject, worldPos, cameraDistance });
+                
+                if (cameraDistance < minCameraDistance) minCameraDistance = cameraDistance;
+                if (cameraDistance > maxCameraDistance) maxCameraDistance = cameraDistance;
+            });
+            
+            // Second pass: apply effects
+            letterData.forEach(({ letterObject, worldPos, cameraDistance }) => {
+                // Make the letter look at the camera
+                letterObject.lookAt(camera.position);
+                
+                // Calculate distance from center of the cube (origin)
+                const distanceFromCenter = worldPos.length();
+                const maxDistanceFromCenter = Math.sqrt(3) * 250;
+                const normalizedCenterDistance = Math.min(1, distanceFromCenter / maxDistanceFromCenter);
+                
+                // Calculate normalized distance from camera: 0 = closest, 1 = farthest
+                const normalizedCameraDistance = maxCameraDistance > minCameraDistance
+                    ? (cameraDistance - minCameraDistance) / (maxCameraDistance - minCameraDistance)
+                    : 0;
+                
+                // Opacity based on camera distance: closest = 100%, farthest = 50%
+                const opacity = 1 - (normalizedCameraDistance * 0.9);
+                
+                // Color: adapt based on theme
+                const isDarkMode = document.body.classList.contains('dark-mode');
+                if (isDarkMode) {
+                    // Dark mode: surface letters are white (255), center letters are grey (105)
+                    const greyValue = 255 - Math.floor((1 - normalizedCenterDistance) * 150);
+                    const color = `rgb(${greyValue}, ${greyValue}, ${greyValue})`;
+                    letterObject.element.style.color = color;
+                } else {
+                    // Light mode: surface letters are black (0), center letters are grey (150)
+                    const greyValue = Math.floor((1 - normalizedCenterDistance) * 150);
+                    const color = `rgb(${greyValue}, ${greyValue}, ${greyValue})`;
+                    letterObject.element.style.color = color;
+                }
+                
+                // Update element opacity
+                letterObject.element.style.opacity = opacity;
+            });
+            
+            renderer.render(scene, camera);
+        }
+        
+        animate();
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        // Listen for theme changes from parent window
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'theme') {
+                const isDarkMode = event.data.theme === 'dark';
+                document.body.classList.toggle('dark-mode', isDarkMode);
+                
+                // Update all existing letter colors immediately
+                letterObjects.forEach(letterObject => {
+                    const worldPos = new THREE.Vector3();
+                    letterObject.getWorldPosition(worldPos);
+                    const distanceFromCenter = worldPos.length();
+                    const maxDistanceFromCenter = Math.sqrt(3) * 250;
+                    const normalizedCenterDistance = Math.min(1, distanceFromCenter / maxDistanceFromCenter);
+                    
+                    if (isDarkMode) {
+                        const greyValue = 255 - Math.floor((1 - normalizedCenterDistance) * 150);
+                        letterObject.element.style.color = `rgb(${greyValue}, ${greyValue}, ${greyValue})`;
+                    } else {
+                        const greyValue = Math.floor((1 - normalizedCenterDistance) * 150);
+                        letterObject.element.style.color = `rgb(${greyValue}, ${greyValue}, ${greyValue})`;
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
