@@ -1,6 +1,16 @@
-# The Noordzij Cube
+# Noordzij Cube VAE
 
-visualization of Gerrit Noordzij's typographic design space.
+Visualization of Gerrit Noordzij's typographic design space,
+with a VAE for learning letter form latent space.
+
+## Quick Start
+
+This repo uses `uv`, the data set preprocessing can be found in `analysis/extract_letters.py` and `dataset/prepare_dataset.sh`
+
+```bash
+# Train the model
+python train_vae.py
+```
 
 ## References
 

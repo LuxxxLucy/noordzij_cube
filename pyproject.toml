@@ -1,0 +1,21 @@
+[project]
+name = "noordzij-cube"
+version = "0.1.0"
+description = ""
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy>=2.0.2",
+    "pillow>=11.3.0",
+    "scikit-learn>=1.6.1",
+    "scipy>=1.11.0",
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "tqdm>=4.66.0",
+    "matplotlib>=3.8.0",
+    "fonttools>=4.47.0",
+    "flask>=3.0.0",
+    "brotli>=1.1.0",
+    "umap-learn>=0.5.0",
+    "scikit-fmm>=2024.5.29",
+]
