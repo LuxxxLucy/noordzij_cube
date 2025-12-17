@@ -93,6 +93,15 @@
             background-color: #222;
         }
     </style>
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
     <button id="theme-toggle">🌙 Dark Mode</button>
@@ -103,8 +112,10 @@
             <p class="sans">Jialin Lu <a href="https://luxxxlucy.github.io">luxxxlucy.github.io</a> November 14 2025</p>
         
         <section>
+            <h2>The Cube</h2>
+            
             <p>
-                <span class="newthought">Visualizing</span> Gerrit Noordzij's Cube<label for="sn-book" class="margin-toggle sidenote-number"></label>
+                Gerrit Noordzij's Cube<label for="sn-book" class="margin-toggle sidenote-number"></label>
                 <input type="checkbox" id="sn-book" class="margin-toggle"/>
                 <span class="sidenote">
                     Seminal work <em>The Stroke: Theory of Writing</em>.
@@ -112,22 +123,112 @@
                     <br>
                     <img src="asset/The Stroke - Theory Of Writing.jpg" alt="The Stroke: Theory of Writing by Gerrit Noordzij" style="width:50%;"/>
                 </span>
-                , which is perhaps the world's first designspace and root of the construction of parametric design and variable font.
-                It introduces the three fundamental characteristics of letterforms, in the cultural sense that the aesthetic of the letterform is determined by the writing tool of pen.
-                
+                is perhaps the world's first design space—the conceptual foundation for parametric design and variable fonts. It defines letterforms through three fundamental axes: translation, expansion, and rotation. These correspond to the physical properties of a writing instrument moving across a surface.
             </p>
+            
             <p>
-                This is now rather boring, in the next step I will try to recreate the cube with a learning model so that we can be sure that those cultural and aesthetic nuances are indeed capturable by computing machinery. Too many works has been done on AI/ML for typography, but I guess in order for it to be truly recognized, we need to be back to classics and be all on focusing on the nuances.
-
+                The cube represents a complete typographic parameter space. Each point within it corresponds to a unique letterform style.
             </p>
+            
             <div class="iframe-wrapper section">
                 <iframe src="cube.html" frameborder="0" allowfullscreen></iframe>
             </div>
         </section>
         
         <section>
-            <h2>Reference </h2>
+            <h2>Can We Learn It?</h2>
             
+            <p>
+                A small variational autoencoder is trained to see if a neural network can internalize this design space. The network compresses each letterform into a latent vector and reconstructs it, attempting to capture typographic features like contrast, weight, and stroke style.
+            </p>
+            
+            <figure>
+                <label for="mn-train-test" class="margin-toggle">&#8853;</label>
+                <input type="checkbox" id="mn-train-test" class="margin-toggle"/>
+                <span class="marginnote">Training data (blue) spans most of the simplex; test samples (orange) held out for validation.
+                The cube is defined from $(0,0,0)$ to $(1,1,1)$. The simplex $(1-x) + (1-y) + (1-z) \leq 1$ where $x,y,z \geq 0$ is held out for testing.
+                </span>
+                <img src="asset/train_test_split.png" alt="Train/Test Split in Noordzij Cube" style="max-width: 100%;"/>
+            </figure>
+            
+            <p>
+                The network does learn something—it can interpolate between unseen letterforms, suggesting it has captured some continuous structure of the design space. But the interpolation isn't smooth. With more data and a larger model, it would likely improve. Still, this small experiment reveals fundamental issues.
+            </p>
+            
+            <figure>
+                <label for="mn-interpolation" class="margin-toggle">&#8853;</label>
+                <input type="checkbox" id="mn-interpolation" class="margin-toggle"/>
+                <span class="marginnote">Interpolating between two unseen 'e' forms. The transitions work but lack smoothness.</span>
+                <img src="asset/interpolation.png" alt="Letter Interpolation" style="max-width: 100%;"/>
+            </figure>
+            
+            <h3>Why Is This Hard?</h3>
+            
+            <p>
+                <strong>The interpolation problem.</strong> Linear paths in latent space rarely follow the true data manifold. Andrew Wilson has a great insight<label for="sn-mode-connectivity" class="margin-toggle sidenote-number"></label>
+                <input type="checkbox" id="sn-mode-connectivity" class="margin-toggle"/>
+                <span class="sidenote">
+                    Garipov, Timur, et al. "Loss Surfaces, Mode Connectivity, and Fast Ensembling of DNNs." NeurIPS 2018.
+                </span>
+                that optima in loss surfaces connect via curved trajectories, not straight lines—a concept called "mode connectivity." This phenomenon rhymes here as well. Instead of relying on vector arithmetic that we assume to work but not always really works well, we need more careful sampling for interpolation such as<label for="sn-riemannian" class="margin-toggle sidenote-number"></label>
+                <input type="checkbox" id="sn-riemannian" class="margin-toggle"/>
+                <span class="sidenote">
+                    Béthune, Louis, et al. "Follow the Energy, Find the Path: Riemannian Metrics from Energy-Based Models." arXiv:2505.18230, 2025.
+                </span>
+                that respect the underlying data manifold.
+            </p>
+            
+            <p>
+                <strong>The representation problem.</strong> Pixel representations limit resolution and editability. Implicit neural fields encode images as continuous functions, offering resolution independence. Signed distance functions (SDFs) give crisp vector-like rendering but struggle with artifacts at sharp corners—a fundamental limitation. Multi-channel SDFs<label for="sn-msdf" class="margin-toggle sidenote-number"></label>
+                <input type="checkbox" id="sn-msdf" class="margin-toggle"/>
+                <span class="sidenote">
+                    Chlumský, Viktor. "Shape Decomposition for Multi-channel Distance Fields." Master's thesis, Czech Technical University in Prague, 2015.
+                </span>
+                encode additional geometry to help. Multi-implicit approaches<label for="sn-multi-implicit" class="margin-toggle sidenote-number"></label>
+                <input type="checkbox" id="sn-multi-implicit" class="margin-toggle"/>
+                <span class="sidenote">
+                    Reddy et al. "A Multi-Implicit Neural Representation for Fonts." NeurIPS 2021.
+                </span>
+                superimpose multiple functions to preserve fine features like serifs.
+            </p>
+            
+            <p>
+                <strong>The editability problem.</strong> Direct Deep SVG generation is hard—discrete Bézier control points or SVG commands turns out to be very difficult to train and generally does not perform well. However, caveat here that even if we could train a network to generate SVG commands, designers still couldn't work with them easily. Simon Cozens noted at the first Font&AI conference,<label for="sn-fontai" class="margin-toggle sidenote-number"></label>
+                <input type="checkbox" id="sn-fontai" class="margin-toggle"/>
+                <span class="sidenote">
+                    "Fonts & AI Conference." Trust, October 2025. <a href="https://trust.ilovetypography.com/fonts-and-ai/">trust.ilovetypography.com/fonts-and-ai/</a>
+                </span>
+                SVG commands suit computers, not designers. Foundry design work needs concrete representations like curve-in/curve-out handles that are interpretable and editable.
+            </p>
+            
+            <h3>A Potential Path Forward</h3>
+            
+            <p>
+                I have a rough idea: train an implicit field for expressiveness, then add a projection step to convert output into parametric-defined shapes. This makes autotracing differentiable—fitting curves while managing gradient flow through implicit gradients.
+                Related work on optimization layers
+                <label for="sn-diff-cvx" class="margin-toggle sidenote-number"></label>
+                <input type="checkbox" id="sn-diff-cvx" class="margin-toggle"/>
+                <span class="sidenote">
+                    Agrawal, Akshay, et al. "Differentiable Convex Optimization Layers." NeurIPS 2019.
+                </span>
+
+                <label for="sn-diff-spline" class="margin-toggle sidenote-number"></label>
+                <input type="checkbox" id="sn-diff-spline" class="margin-toggle"/>
+                <span class="sidenote">
+                    Cho, Minsu, et al. "Differentiable Spline Approximations." arXiv:2110.01532, 2021.
+                </span>
+                provide relevant techniques, but the challenge is quality—the curve fitting must handle sharp edges and corners properly, with special care for discontinuities.
+            </p>
+            
+            <p>
+                The core idea isn't new, but if done right, it could bridge neural expressiveness with parametric editability: a stable neural model with good shape bias that produces editable results designers can actually work with.
+            </p>
+        </section>
+        
+        <section>
+            <h2>References</h2>
+            
+            <h3>Noordzij Cube</h3>
             <p>
                 <a href="https://www.typeroom.eu/in-memoriam-gerrit-noordzij-1931-2022">In Memoriam Gerrit Noordzij 1931-2022</a>
             </p>
@@ -135,8 +236,30 @@
                 <a href="https://www.axis-praxis.org/playground/noordzij-cube/">Axis Praxis: Noordzij Cube</a>
             </p>
             <p>
-                <a href="https://fvar.unsoundscapes.com">Multidimensional
-                    Axis Visualizer</a>
+                <a href="https://fvar.unsoundscapes.com">Multidimensional Axis Visualizer</a>
+            </p>
+            
+            <h3>Related Technical Work</h3>
+            <p>
+                Ha, David. "<a href="https://blog.otoro.net/2016/04/01/generating-large-images-from-latent-vectors/">Generating Large Images from Latent Vectors</a>." blog.otoro.net, 2016.
+            </p>
+            <p>
+                Reddy, Pradyumna, et al. "<a href="https://proceedings.neurips.cc/paper/2021/file/6948bd44c91acd2b54ecdd1b132f10fb-Paper.pdf">A Multi-Implicit Neural Representation for Fonts</a>." NeurIPS 2021.
+            </p>
+            <p>
+                Chlumský, Viktor. "<a href="https://dspace.cvut.cz/bitstream/handle/10467/62770/F8-DP-2015-Chlumsky-Viktor-thesis.pdf">Shape Decomposition for Multi-channel Distance Fields</a>." Master's thesis, Czech Technical University in Prague, 2015.
+            </p>
+            <p>
+                Béthune, Louis, et al. "<a href="https://arxiv.org/abs/2505.18230">Follow the Energy, Find the Path: Riemannian Metrics from Energy-Based Models</a>." arXiv:2505.18230, 2025.
+            </p>
+            <p>
+                Garipov, Timur, Pavel Izmailov, Dmitrii Podoprikhin, Dmitry Vetrov, and Andrew Gordon Wilson. "<a href="https://arxiv.org/abs/1802.10026">Loss Surfaces, Mode Connectivity, and Fast Ensembling of DNNs</a>." NeurIPS 2018.
+            </p>
+            <p>
+                Cho, Minsu, Jihoon Chung, and Seok-Hee Hong. "<a href="https://arxiv.org/abs/2110.01532">Differentiable Spline Approximations</a>." arXiv:2110.01532, 2021.
+            </p>
+            <p>
+                Agrawal, Akshay, Brandon Amos, Shane Barratt, Stephen Boyd, Steven Diamond, and J. Zico Kolter. "<a href="https://web.stanford.edu/~boyd/papers/pdf/diff_cvxpy.pdf">Differentiable Convex Optimization Layers</a>." NeurIPS 2019.
             </p>
         </section>
     </article>
